@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Issue Triage Eval — agreement with maintainers</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #141a22;
+        --panel-2: #1b232d;
+        --line: #243040;
+        --ink: #e6edf3;
+        --ink-dim: #8b98a8;
+        --ink-faint: #5d6b7d;
+        --good: #3fb950;
+        --warn: #d29922;
+        --bad: #f85149;
+        --accent: #58a6ff;
+        --grid: #1f2730;
+        --mono:
+          "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        --sans:
+          Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(
+            1200px 500px at 80% -10%,
+            #16202b 0%,
+            transparent 60%
+          ),
+          var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 28px 80px;
+      }
+
+      /* header */
+      header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 22px;
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin: 0 0 10px;
+      }
+      h1 {
+        font-size: 30px;
+        line-height: 1.15;
+        margin: 0;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+      h1 .q {
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--ink-dim);
+        margin: 10px 0 0;
+        max-width: 62ch;
+        font-size: 14.5px;
+      }
+      .status {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--ink-dim);
+        text-align: right;
+        white-space: nowrap;
+      }
+      .dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--good);
+        margin-right: 7px;
+        box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.15);
+        animation: pulse 2.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        50% {
+          box-shadow: 0 0 0 6px rgba(63, 185, 80, 0);
+        }
+      }
+
+      /* hero readout: the signature element */
+      .hero {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 28px;
+        margin: 30px 0 34px;
+        align-items: stretch;
+      }
+      @media (max-width: 760px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+      }
+      .gauge {
+        background: linear-gradient(180deg, var(--panel) 0%, #10161e 100%);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 26px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .gauge::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          140px 90px at 50% 0%,
+          rgba(88, 166, 255, 0.1),
+          transparent 70%
+        );
+      }
+      .gauge .label {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+      .gauge .big {
+        font-family: var(--mono);
+        font-size: 72px;
+        font-weight: 600;
+        line-height: 1;
+        margin: 8px 0 2px;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+      .gauge .unit {
+        font-size: 30px;
+        color: var(--ink-dim);
+      }
+      .gauge .ceil {
+        font-size: 12.5px;
+        color: var(--ink-dim);
+        margin-top: 14px;
+        border-top: 1px dashed var(--line);
+        padding-top: 12px;
+      }
+      .roi {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 26px 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .roi .kicker {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 14px;
+      }
+      .roi-row {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+      }
+      .roi-stat .n {
+        font-family: var(--mono);
+        font-size: 34px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .roi-stat .n.green {
+        color: var(--good);
+      }
+      .roi-stat .c {
+        font-size: 12.5px;
+        color: var(--ink-dim);
+        margin-top: 2px;
+      }
+      .roi .assume {
+        font-size: 12px;
+        color: var(--ink-faint);
+        margin-top: 16px;
+        font-family: var(--mono);
+      }
+
+      /* metric strip */
+      .strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 34px;
+      }
+      @media (max-width: 760px) {
+        .strip {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      .metric {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 18px 16px;
+      }
+      .metric .t {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+      .metric .v {
+        font-family: var(--mono);
+        font-size: 30px;
+        font-weight: 600;
+        margin-top: 8px;
+        font-variant-numeric: tabular-nums;
+      }
+      .metric .d {
+        font-size: 12px;
+        color: var(--ink-dim);
+        margin-top: 3px;
+      }
+      .bar {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--grid);
+        margin-top: 12px;
+        overflow: hidden;
+      }
+      .bar > i {
+        display: block;
+        height: 100%;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
+      /* section heads */
+      .sec {
+        margin: 42px 0 16px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .sec h2 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+      .sec .rule {
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .sec .meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-faint);
+      }
+
+      /* comparison table */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      thead th {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        font-weight: 500;
+      }
+      tbody tr:hover {
+        background: var(--panel-2);
+      }
+      td.num {
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .repo-tag {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-dim);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 2px 7px;
+        margin-right: 8px;
+      }
+      .model-name {
+        font-family: var(--mono);
+        font-size: 12.5px;
+      }
+      .pill {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid currentColor;
+      }
+      .pill.win {
+        color: var(--good);
+      }
+
+      /* confusion matrix */
+      .cm-wrap {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 22px;
+        overflow-x: auto;
+      }
+      .cm {
+        border-collapse: separate;
+        border-spacing: 3px;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .cm th {
+        padding: 6px 8px;
+        color: var(--ink-dim);
+        font-weight: 500;
+        font-size: 11px;
+      }
+      .cm th.col {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        height: 64px;
+        vertical-align: bottom;
+        text-align: left;
+      }
+      .cm td {
+        width: 42px;
+        height: 42px;
+        text-align: center;
+        border-radius: 6px;
+        font-variant-numeric: tabular-nums;
+        color: #0d1117;
+        font-weight: 600;
+      }
+      .cm td.zero {
+        color: var(--ink-faint);
+        background: var(--panel-2) !important;
+      }
+      .cm .axis {
+        color: var(--ink-faint);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      /* footer note */
+      .note {
+        margin-top: 40px;
+        padding: 18px 20px;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--warn);
+        border-radius: 0 10px 10px 0;
+        background: var(--panel);
+        font-size: 13.5px;
+        color: var(--ink-dim);
+      }
+      .note b {
+        color: var(--ink);
+      }
+      .foot {
+        margin-top: 30px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .empty {
+        display: none;
+        background: var(--panel);
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        color: var(--ink-dim);
+      }
+      .empty code {
+        font-family: var(--mono);
+        color: var(--accent);
+        background: var(--panel-2);
+        padding: 2px 7px;
+        border-radius: 5px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <p class="eyebrow">LLM Triage Evaluation · run report</p>
+          <h1>
+            Can an LLM triage real issues
+            <span class="q">as well as the maintainers?</span>
+          </h1>
+          <p class="sub">
+            Closed issues pulled from public repos. The maintainers' own labels
+            are the ground truth — no self-grading. Every number below is
+            reproducible from
+            <code style="font-family: var(--mono); font-size: 12.5px"
+              >results/scores.json</code
+            >.
+          </p>
+        </div>
+        <div class="status">
+          <span class="dot"></span><span id="src">loading…</span>
+        </div>
+      </header>
+
+      <div id="dash">
+        <!-- hero -->
+        <div class="hero">
+          <div class="gauge">
+            <div class="label">Best label agreement</div>
+            <div class="big">
+              <span id="heroAcc">—</span><span class="unit">%</span>
+            </div>
+            <div class="ceil" id="heroModel">
+              vs. what maintainers actually labeled
+            </div>
+          </div>
+          <div class="roi">
+            <p class="kicker">What that buys the team</p>
+            <div class="roi-row">
+              <div class="roi-stat">
+                <div class="n green" id="roiHrs">—</div>
+                <div class="c">maintainer-hours saved / month</div>
+              </div>
+              <div class="roi-stat">
+                <div class="n" id="roiUsd">—</div>
+                <div class="c">gross savings / year</div>
+              </div>
+              <div class="roi-stat">
+                <div class="n green" id="roiNet">—</div>
+                <div class="c">net savings / year</div>
+              </div>
+              <div class="roi-stat">
+                <div class="n" id="roiPct">—</div>
+                <div class="c">cut in triage time</div>
+              </div>
+            </div>
+            <div class="assume" id="roiAssume"></div>
+          </div>
+        </div>
+
+        <!-- metric strip -->
+        <div class="strip" id="strip"></div>
+
+        <!-- comparison -->
+        <div class="sec">
+          <h2>Model vs. model</h2>
+          <div class="rule"></div>
+          <span class="meta" id="cmpMeta"></span>
+        </div>
+        <div
+          style="
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+          "
+        >
+          <table id="cmp">
+            <thead>
+              <tr>
+                <th>Repo / model</th>
+                <th style="text-align: right">n</th>
+                <th style="text-align: right">Label acc</th>
+                <th style="text-align: right">Macro F1</th>
+                <th style="text-align: right">Dup prec.</th>
+                <th style="text-align: right">Priority</th>
+                <th style="text-align: right">Hrs/mo</th>
+                <th style="text-align: right">API cost</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- confusion matrix -->
+        <div class="sec">
+          <h2>Where it agrees and where it slips</h2>
+          <div class="rule"></div>
+          <span class="meta" id="cmTitle"></span>
+        </div>
+        <div class="cm-wrap">
+          <div id="cmHost"></div>
+          <div
+            style="
+              font-size: 12px;
+              color: var(--ink-faint);
+              margin-top: 14px;
+              font-family: var(--mono);
+            "
+          >
+            rows = maintainer label · columns = LLM label · diagonal = agreement
+          </div>
+        </div>
+
+        <div class="sec" id="confSec" style="display:none">
+          <h2>Confidence vs accuracy</h2>
+          <div class="rule"></div>
+          <span class="meta">does the model know when it knows?</span>
+        </div>
+        <div id="confHost"></div>
+
+        <div class="note" id="note">
+          <b>The honest ceiling.</b> It isn't 100%. Maintainers disagree with
+          each other and label taxonomies drift, so some "errors" are really two
+          humans who'd have labeled it differently too. That gap is the finding,
+          not a failure.
+        </div>
+      </div>
+
+      <div class="empty" id="empty">
+        No results yet. Run the eval, then refresh:
+        <div style="margin-top: 14px; line-height: 2">
+          <code>python -m triage_eval.fetch --repo grafana/grafana --n 500</code
+          ><br />
+          <code>python -m triage_eval.run --provider mock</code><br />
+          <code>python -m triage_eval.score</code>
+        </div>
+        <div style="margin-top: 16px; font-size: 12px">
+          Showing bundled sample data meanwhile — the dashboard above is live.
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>issue-triage-eval · local report</span>
+        <span id="genAt"></span>
+      </div>
+    </div>
+
+    <script>
+      const PALETTE = [
+        "#0e1620",
+        "#16324a",
+        "#1d4e6e",
+        "#2a6f8e",
+        "#3a8fa6",
+        "#54afb8",
+        "#7fcdc4",
+      ];
+      const fmtUSD = (n) => "$" + Math.round(n).toLocaleString();
+
+      // Bundled sample so the page renders for screenshots before any real run.
+      // Replace by running the eval — loadData() prefers results/scores.json.
+      const SAMPLE = [
+        {
+          repo: "grafana/grafana",
+          model: "claude-sonnet-4-6",
+          n_scored: 478,
+          label_accuracy: 0.871,
+          macro_f1: 0.802,
+          macro_precision: 0.79,
+          macro_recall: 0.815,
+          priority_accuracy: 0.74,
+          priority_n: 96,
+          dup_precision: 0.93,
+          dup_recall: 0.71,
+          dup_support: 41,
+          confusion_labels: [
+            "bug",
+            "feature",
+            "question",
+            "docs",
+            "ci/build",
+            "security",
+            "other",
+          ],
+          confusion_matrix: [
+            [201, 7, 9, 2, 3, 1, 6],
+            [5, 84, 4, 1, 0, 0, 4],
+            [8, 6, 71, 3, 1, 0, 5],
+            [1, 1, 2, 28, 0, 0, 3],
+            [2, 0, 1, 0, 22, 0, 2],
+            [0, 0, 0, 0, 0, 11, 1],
+            [6, 4, 5, 2, 1, 0, 18],
+          ],
+          cost_usd: 1.24,
+          confidence_tiers: {
+            high:   { n: 312, accuracy: 0.941, avg_confidence: 0.93, calibration_gap: -0.011 },
+            medium: { n: 121, accuracy: 0.802, avg_confidence: 0.67, calibration_gap: -0.132 },
+            low:    { n:  45, accuracy: 0.578, avg_confidence: 0.38, calibration_gap: -0.198 },
+            overall: { avg_confidence: 0.81, calibration_gap: -0.06 },
+          },
+          roi: {
+            hours_saved_per_month: 23.4,
+            usd_saved_per_year: 21060,
+            net_usd_saved_per_year: 20046,
+            api_cost_usd_per_run: 1.24,
+            pct_time_saved: 0.83,
+            assumptions: {
+              issues_per_month: 400,
+              minutes_per_triage: 4,
+              loaded_hourly_rate: 75,
+            },
+          },
+        },
+        {
+          repo: "grafana/grafana",
+          model: "gpt-4o",
+          n_scored: 478,
+          label_accuracy: 0.842,
+          macro_f1: 0.771,
+          macro_precision: 0.76,
+          macro_recall: 0.783,
+          priority_accuracy: 0.7,
+          priority_n: 96,
+          dup_precision: 0.88,
+          dup_recall: 0.68,
+          dup_support: 41,
+          confusion_labels: [
+            "bug",
+            "feature",
+            "question",
+            "docs",
+            "ci/build",
+            "security",
+            "other",
+          ],
+          confusion_matrix: [
+            [195, 9, 11, 2, 4, 1, 7],
+            [7, 80, 5, 1, 1, 0, 5],
+            [10, 7, 67, 3, 2, 0, 5],
+            [1, 2, 2, 26, 0, 0, 4],
+            [3, 0, 1, 0, 21, 0, 3],
+            [0, 0, 1, 0, 0, 10, 1],
+            [7, 5, 6, 2, 1, 0, 15],
+          ],
+          cost_usd: 0.98,
+          roi: {
+            hours_saved_per_month: 21.9,
+            usd_saved_per_year: 19710,
+            net_usd_saved_per_year: 18734,
+            api_cost_usd_per_run: 0.98,
+            pct_time_saved: 0.8,
+            assumptions: {
+              issues_per_month: 400,
+              minutes_per_triage: 4,
+              loaded_hourly_rate: 75,
+            },
+          },
+        },
+        {
+          repo: "prometheus/prometheus",
+          model: "claude-sonnet-4-6",
+          n_scored: 392,
+          label_accuracy: 0.858,
+          macro_f1: 0.78,
+          macro_precision: 0.77,
+          macro_recall: 0.79,
+          priority_accuracy: 0.72,
+          priority_n: 71,
+          dup_precision: 0.9,
+          dup_recall: 0.69,
+          dup_support: 33,
+          confusion_labels: [
+            "bug",
+            "feature",
+            "question",
+            "docs",
+            "ci/build",
+            "security",
+            "other",
+          ],
+          confusion_matrix: [
+            [168, 6, 7, 1, 3, 1, 5],
+            [4, 71, 3, 1, 0, 0, 3],
+            [6, 5, 58, 2, 1, 0, 4],
+            [1, 1, 1, 22, 0, 0, 2],
+            [2, 0, 1, 0, 19, 0, 2],
+            [0, 0, 0, 0, 0, 9, 0],
+            [5, 3, 4, 1, 1, 0, 14],
+          ],
+          cost_usd: 1.11,
+          roi: {
+            hours_saved_per_month: 22.6,
+            usd_saved_per_year: 20340,
+            net_usd_saved_per_year: 19007,
+            api_cost_usd_per_run: 1.11,
+            pct_time_saved: 0.82,
+            assumptions: {
+              issues_per_month: 400,
+              minutes_per_triage: 4,
+              loaded_hourly_rate: 75,
+            },
+          },
+        },
+      ];
+
+      async function loadData() {
+        try {
+          const r = await fetch("../results/scores.json", {
+            cache: "no-store",
+          });
+
+          if (r.ok) {
+            const d = await r.json();
+            if (Array.isArray(d) && d.length) {
+              return { data: d, live: true };
+            }
+          }
+        } catch (e) {}
+        return { data: SAMPLE, live: false };
+      }
+
+      function pct(x) {
+        return x == null ? "—" : (x * 100).toFixed(0) + "%";
+      }
+      function f3(x) {
+        return x == null ? "—" : x.toFixed(2);
+      }
+
+      function renderConfidence(best) {
+        const ct = best.confidence_tiers;
+        if (!ct) return;
+        document.getElementById("confSec").style.display = "";
+        const tiers = [
+          { key: "high",   label: "High confidence (≥ 0.8)",  color: "var(--good)" },
+          { key: "medium", label: "Medium confidence (0.5–0.8)", color: "var(--warn)" },
+          { key: "low",    label: "Low confidence (< 0.5)",   color: "var(--bad)"  },
+        ];
+        const rows = tiers.map(({ key, label, color }) => {
+          const t = ct[key] || {};
+          if (!t.n) return "";
+          const acc = t.accuracy != null ? (t.accuracy * 100).toFixed(0) + "%" : "—";
+          const gap = t.calibration_gap != null ? (t.calibration_gap >= 0 ? "+" : "") + t.calibration_gap.toFixed(2) : "";
+          const barW = Math.round((t.accuracy || 0) * 100);
+          return `<div style="display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)">
+            <div style="width:180px;font-size:13px;color:var(--ink-dim)">${label}</div>
+            <div style="width:48px;font-family:var(--mono);font-size:20px;font-weight:600;color:${color}">${acc}</div>
+            <div style="flex:1;height:6px;background:var(--grid);border-radius:3px;overflow:hidden">
+              <div style="width:${barW}%;height:100%;background:${color};border-radius:3px"></div>
+            </div>
+            <div style="width:80px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-align:right">${t.n} issues</div>
+            <div style="width:60px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-align:right" title="avg confidence minus accuracy">${gap ? "gap "+gap : ""}</div>
+          </div>`;
+        }).join("");
+        document.getElementById("confHost").innerHTML =
+          `<div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px">${rows}</div>`;
+      }
+
+      function render({ data, live }) {
+        document.getElementById("src").textContent = live
+          ? "results/scores.json"
+          : "sample data (run the eval to replace)";
+        document.getElementById("empty").style.display = live
+          ? "none"
+          : "block";
+
+        const best = data.reduce((a, b) =>
+          b.label_accuracy > a.label_accuracy ? b : a,
+        );
+        document.getElementById("heroAcc").textContent = (
+          best.label_accuracy * 100
+        ).toFixed(0);
+        document.getElementById("heroModel").innerHTML =
+          `<span style="color:var(--accent)">${best.model}</span> on ${best.repo} · n=${best.n_scored}`;
+
+        const roi = best.roi || {};
+        document.getElementById("roiHrs").textContent =
+          roi.hours_saved_per_month ?? "—";
+        document.getElementById("roiUsd").textContent = roi.usd_saved_per_year
+          ? fmtUSD(roi.usd_saved_per_year)
+          : "—";
+        document.getElementById("roiNet").textContent = roi.net_usd_saved_per_year != null
+          ? fmtUSD(roi.net_usd_saved_per_year)
+          : "—";
+        document.getElementById("roiPct").textContent = pct(roi.pct_time_saved);
+        const a = roi.assumptions || {};
+        const apiCost = best.cost_usd != null ? ` · API cost $${best.cost_usd.toFixed(4)}/run` : "";
+        document.getElementById("roiAssume").textContent = a.issues_per_month
+          ? `assumes ${a.issues_per_month} issues/mo · ${a.minutes_per_triage} min/triage · $${a.loaded_hourly_rate}/hr loaded${apiCost}`
+          : "";
+
+        // metric strip from best run
+        const strip = [
+          {
+            t: "Label accuracy",
+            v: pct(best.label_accuracy),
+            d: "vs maintainer labels",
+            frac: best.label_accuracy,
+          },
+          {
+            t: "Macro F1",
+            v: f3(best.macro_f1),
+            d: "balanced across classes",
+            frac: best.macro_f1,
+          },
+          {
+            t: "Duplicate precision",
+            v: pct(best.dup_precision),
+            d: `support ${best.dup_support ?? "—"}`,
+            frac: best.dup_precision,
+          },
+          {
+            t: "Priority match",
+            v: pct(best.priority_accuracy),
+            d: `n=${best.priority_n ?? "—"}`,
+            frac: best.priority_accuracy,
+          },
+          {
+            t: "API cost / run",
+            v: best.cost_usd != null ? `$${best.cost_usd.toFixed(4)}` : "—",
+            d: "tokens in + out",
+            frac: null,
+          },
+        ];
+        document.getElementById("strip").innerHTML = strip
+          .map(
+            (m) => `
+    <div class="metric"><div class="t">${m.t}</div><div class="v">${m.v}</div>
+      <div class="d">${m.d}</div>
+      <div class="bar"><i style="width:${Math.round((m.frac || 0) * 100)}%"></i></div></div>`,
+          )
+          .join("");
+
+        // comparison table
+        const byAcc = [...data].sort(
+          (x, y) => y.label_accuracy - x.label_accuracy,
+        );
+        const top = byAcc[0];
+        document.getElementById("cmpMeta").textContent =
+          `${data.length} runs · ${new Set(data.map((d) => d.model)).size} model(s)`;
+        document.querySelector("#cmp tbody").innerHTML = byAcc
+          .map(
+            (s) => `
+    <tr>
+      <td><span class="repo-tag">${s.repo.split("/")[1] || s.repo}</span>
+        <span class="model-name">${s.model}</span>
+        ${s === top ? '<span class="pill win">best</span>' : ""}</td>
+      <td class="num">${s.n_scored}</td>
+      <td class="num">${pct(s.label_accuracy)}</td>
+      <td class="num">${f3(s.macro_f1)}</td>
+      <td class="num">${pct(s.dup_precision)}</td>
+      <td class="num">${pct(s.priority_accuracy)}</td>
+      <td class="num">${s.roi?.hours_saved_per_month ?? "—"}</td>
+      <td class="num">${s.cost_usd != null ? "$"+s.cost_usd.toFixed(4) : "—"}</td>
+    </tr>`,
+          )
+          .join("");
+
+        // confusion matrix for best run
+        renderCM(best);
+        document.getElementById("cmTitle").textContent =
+          `${best.model} · ${best.repo}`;
+
+        renderConfidence(best);
+
+        document.getElementById("genAt").textContent =
+          "rendered " +
+          new Date().toISOString().replace("T", " ").slice(0, 16) +
+          " UTC";
+      }
+
+      function renderCM(s) {
+        const L = s.confusion_labels || [],
+          M = s.confusion_matrix || [];
+        if (!L.length) {
+          document.getElementById("cmHost").textContent =
+            "(no matrix in this run)";
+          return;
+        }
+        const max = Math.max(1, ...M.flat());
+        let html =
+          '<table class="cm"><thead><tr><th></th>' +
+          `<th class="axis" colspan="${L.length}">LLM predicted →</th></tr><tr><th></th>` +
+          L.map((l) => `<th class="col">${l}</th>`).join("") +
+          "</tr></thead><tbody>";
+        M.forEach((row, i) => {
+          html +=
+            `<tr><th style="text-align:right">${L[i]}</th>` +
+            row
+              .map((v, j) => {
+                const t = v / max,
+                  diag = i === j;
+                const idx = Math.min(
+                  PALETTE.length - 1,
+                  Math.round(t * (PALETTE.length - 1)),
+                );
+                const bg = v === 0 ? "" : PALETTE[idx];
+                const cls = v === 0 ? "zero" : "";
+                // small off-diagonal counts get a faint warm tint so errors are visible
+                const errBg =
+                  v > 0 && !diag && t < 0.18 ? "rgba(210,153,34,.16)" : bg;
+                const ink =
+                  t > 0.45 || diag
+                    ? "#eaf6ff"
+                    : !diag && v > 0
+                      ? "#d29922"
+                      : "#0d1117";
+                return `<td class="${cls}" style="${v > 0 ? `background:${errBg};color:${ink}` : ""}${diag ? ";outline:1.5px solid var(--accent);outline-offset:-1.5px" : ""}" title="${L[i]} → ${L[j]}: ${v}">${v || ""}</td>`;
+              })
+              .join("") +
+            "</tr>";
+        });
+        html += "</tbody></table>";
+        document.getElementById("cmHost").innerHTML = html;
+      }
+
+      loadData().then(render);
+    </script>
+  </body>
+</html>
