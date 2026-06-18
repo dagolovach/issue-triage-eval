@@ -20,7 +20,8 @@ class ROIAssumptions:
 
 
 def roi(accuracy: float, api_cost_usd: float = 0.0,
-        a: ROIAssumptions = ROIAssumptions()) -> dict:
+        a: ROIAssumptions = ROIAssumptions(),
+        cost_per_issue_usd: float = 0.0) -> dict:
     """Return monthly minutes and dollars saved at a given label accuracy."""
     baseline_min = a.issues_per_month * a.minutes_per_triage
 
@@ -35,6 +36,11 @@ def roi(accuracy: float, api_cost_usd: float = 0.0,
     saved_usd_year = saved_usd * 12
     net_usd_year = saved_usd_year - api_cost_usd * 12
 
+    human_cost_per_issue = a.minutes_per_triage / 60 * a.loaded_hourly_rate
+    llm_cost_per_issue = cost_per_issue_usd
+    saved_per_correct = human_cost_per_issue - llm_cost_per_issue
+    roi_multiplier = round(human_cost_per_issue / llm_cost_per_issue) if llm_cost_per_issue else None
+
     return {
         "accuracy": round(accuracy, 4),
         "baseline_minutes_per_month": round(baseline_min),
@@ -46,6 +52,10 @@ def roi(accuracy: float, api_cost_usd: float = 0.0,
         "usd_saved_per_year": round(saved_usd_year),
         "api_cost_usd_per_run": round(api_cost_usd, 4),
         "net_usd_saved_per_year": round(net_usd_year),
+        "human_cost_per_issue_usd": round(human_cost_per_issue, 4),
+        "llm_cost_per_issue_usd": round(llm_cost_per_issue, 5),
+        "saved_per_correct_issue_usd": round(saved_per_correct, 4),
+        "roi_multiplier": roi_multiplier,
         "assumptions": a.__dict__,
     }
 

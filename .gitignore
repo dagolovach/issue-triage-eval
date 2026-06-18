@@ -13,6 +13,8 @@ venv/
 data/*.jsonl
 results/*.jsonl
 results/*.json
+!results/scores.json
+!results/repo_stats.json
 results/post.md
 results/comparison.png
 results/confusion_matrix.png

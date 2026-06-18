@@ -18,10 +18,10 @@ CATEGORIES = ["bug", "feature", "question", "docs", "ci/build", "security", "oth
 # raw-label substring -> normalized category. First match wins, order matters.
 CATEGORY_RULES: list[tuple[str, str]] = [
     (r"\bsecurity\b|vulnerab|cve", "security"),
-    (r"\bbug\b|regression|crash|broken|defect", "bug"),
-    (r"feature|enhancement|proposal|feat\b", "feature"),
+    (r"(?:type|kind)/(?:bug|regression)|(?:^|/)regression$|\bbug\b|crash|broken|defect", "bug"),
+    (r"(?:type|kind)/(?:feature|enhancement|ux)|feature|enhancement|proposal|feat\b", "feature"),
     (r"question|support|discussion|how[- ]?to", "question"),
-    (r"docs?\b|documentation", "docs"),
+    (r"(?:type|kind)/doc|docs?\b|documentation", "docs"),
     (r"ci\b|build|test|flake|pipeline|release", "ci/build"),
 ]
 
@@ -29,14 +29,15 @@ CATEGORY_RULES: list[tuple[str, str]] = [
 PROCESS_LABELS = re.compile(
     r"stale|wontfix|duplicate|needs[- ]?(triage|investigation|info|more)|"
     r"good[- ]?first[- ]?issue|help[- ]?wanted|on[- ]?hold|waiting|"
-    r"keep[- ]?open|pinned|backport|type/.*request|triage/",
+    r"keep[- ]?open|pinned|backport|triage/|"
+    r"^internal$|^area/|^team/|^datasource/|^automated|^component/",
     re.I,
 )
 
 PRIORITY_RULES: list[tuple[str, str]] = [
-    (r"crit|p0|p1\b|urgent|sev-?1|priority/critical|priority/high", "high"),
-    (r"\bp2\b|medium|priority/medium|important", "medium"),
-    (r"\bp3\b|\bp4\b|low|minor|priority/low|trivial", "low"),
+    (r"crit|/p0|/p1\b|p0\b|p1\b|urgent|sev-?1|priority/critical|priority/high", "high"),
+    (r"/p2\b|\bp2\b|medium|priority/medium|important|priority-2", "medium"),
+    (r"/p[34]\b|\bp[34]\b|low|minor|priority/low|trivial|priority-3|priority-4", "low"),
 ]
 
 

@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Iterator
 
@@ -53,21 +54,20 @@ def _get(url: str, params: dict | None = None) -> requests.Response:
 
 
 def fetch_issues(repo: str, n: int) -> Iterator[dict]:
-    """Yield up to n closed *issues* (PRs filtered out)."""
-    owner, name = repo.split("/")
+    """Yield up to n closed *issues* (PRs excluded via search API)."""
     page, got = 1, 0
     while got < n:
+        print(f"  page {page} ({got}/{n})...", file=sys.stderr)
         r = _get(
-            f"{API}/repos/{owner}/{name}/issues",
-            params={"state": "closed", "per_page": 100, "page": page,
-                    "sort": "created", "direction": "desc"},
+            f"{API}/search/issues",
+            params={"q": f"repo:{repo} type:issue state:closed",
+                    "per_page": 100, "page": page,
+                    "sort": "created", "order": "desc"},
         )
-        batch = r.json()
-        if not batch:
+        items = r.json().get("items", [])
+        if not items:
             break
-        for issue in batch:
-            if "pull_request" in issue:  # the issues endpoint also returns PRs
-                continue
+        for issue in items:
             yield issue
             got += 1
             if got >= n:
@@ -107,7 +107,53 @@ def to_record(issue: dict, repo: str) -> dict:
     }
 
 
+def _fetch_total_closed_issues(owner: str, name: str) -> int | None:
+    """Return total closed issue count via the Search API (excludes PRs)."""
+    try:
+        r = _get(
+            f"{API}/search/issues",
+            params={"q": f"repo:{owner}/{name} type:issue state:closed", "per_page": 1},
+        )
+        return r.json().get("total_count")
+    except Exception:
+        return None
+
+
+def _fetch_repo_created_at(owner: str, name: str) -> float | None:
+    """Return repo creation timestamp in seconds since epoch."""
+    try:
+        r = _get(f"{API}/repos/{owner}/{name}")
+        created = r.json().get("created_at", "")
+        if created:
+            return time.mktime(time.strptime(created, "%Y-%m-%dT%H:%M:%SZ"))
+    except Exception:
+        pass
+    return None
+
+
 def compute_repo_stats(repo: str, records: list[dict]) -> dict:
+    owner, name = repo.split("/")
+    n_fetched = len(records)
+
+    total_closed = _fetch_total_closed_issues(owner, name)
+    repo_created_ts = _fetch_repo_created_at(owner, name)
+    now_ts = time.time()
+
+    if total_closed is not None and repo_created_ts is not None:
+        repo_age_months = max((now_ts - repo_created_ts) / (86400 * 30.44), 1)
+        avg_per_month = round(total_closed / repo_age_months, 1)
+        repo_created = time.strftime("%Y-%m-%d", time.gmtime(repo_created_ts))
+        today = time.strftime("%Y-%m-%d", time.gmtime(now_ts))
+        return {
+            "repo": repo,
+            "n_fetched": n_fetched,
+            "total_closed_issues": total_closed,
+            "earliest": repo_created,
+            "latest": today,
+            "span_days": round((now_ts - repo_created_ts) / 86400),
+            "avg_issues_per_month": avg_per_month,
+        }
+
     dates = []
     for r in records:
         try:
@@ -119,12 +165,12 @@ def compute_repo_stats(repo: str, records: list[dict]) -> dict:
         return {}
     earliest = min(dates)
     latest = max(dates)
-    span_days = max((latest - earliest) / 86400, 1)
+    span_days = max((now_ts - earliest) / 86400, 1)
     span_months = span_days / 30.44
-    avg_per_month = round(len(dates) / span_months, 1)
+    avg_per_month = round(n_fetched / span_months, 1)
     return {
         "repo": repo,
-        "n_fetched": len(records),
+        "n_fetched": n_fetched,
         "earliest": time.strftime("%Y-%m-%d", time.gmtime(earliest)),
         "latest": time.strftime("%Y-%m-%d", time.gmtime(latest)),
         "span_days": round(span_days),
@@ -144,6 +190,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Fetch closed issues -> data/{repo}.jsonl")
     ap.add_argument("--repo", required=True, help="owner/name, e.g. grafana/grafana")
     ap.add_argument("--n", type=int, default=500)
+    ap.add_argument("--workers", type=int, default=8, help="parallel workers for to_record (default 8)")
     args = ap.parse_args()
 
     if not os.environ.get("GITHUB_TOKEN"):
@@ -152,26 +199,31 @@ def main() -> None:
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     out = DATA_DIR / f"{args.repo.replace('/', '__')}.jsonl"
+    print(f"  fetching issue list...", file=sys.stderr)
+    raw_issues = list(fetch_issues(args.repo, args.n))
+    print(f"  {len(raw_issues)} issues fetched, processing with {args.workers} workers...", file=sys.stderr)
     records = []
     n_dups = 0
-    with out.open("w") as f:
-        for issue in fetch_issues(args.repo, args.n):
-            rec = to_record(issue, args.repo)
+    with ThreadPoolExecutor(max_workers=args.workers) as pool, out.open("w") as f:
+        for rec in pool.map(lambda i: to_record(i, args.repo), raw_issues):
+            records.append(rec)
             if rec["duplicate_of"] is not None:
                 n_dups += 1
             f.write(json.dumps(rec) + "\n")
-            records.append(rec)
             if len(records) % 50 == 0:
-                print(f"  {len(records)} issues...", file=sys.stderr)
+                print(f"  {len(records)} processed...", file=sys.stderr)
     print(f"wrote {len(records)} issues ({n_dups} duplicates) -> {out}")
 
     stats = compute_repo_stats(args.repo, records)
     if stats:
         save_repo_stats(stats)
+        total_note = (f"  total closed: {stats['total_closed_issues']:,}"
+                      if stats.get("total_closed_issues") else "")
         print(
-            f"repo stats: {stats['n_fetched']} issues over {stats['span_days']} days "
+            f"repo stats: {stats['n_fetched']} fetched over {stats['span_days']} days "
             f"({stats['earliest']} to {stats['latest']}) "
-            f"= {stats['avg_issues_per_month']} issues/month avg"
+            f"= {stats['avg_issues_per_month']} issues/month avg (lifetime)"
+            + (f"\n{total_note}" if total_note else "")
         )
 
 

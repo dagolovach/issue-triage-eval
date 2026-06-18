@@ -1,0 +1,457 @@
+[
+  {
+    "repo": "cli/cli",
+    "model": "claude-claude-sonnet-4-6",
+    "n_scored": 449,
+    "label_accuracy": 0.637,
+    "macro_precision": 0.2841,
+    "macro_recall": 0.2338,
+    "macro_f1": 0.248,
+    "priority_accuracy": 0.24,
+    "priority_n": 25,
+    "dup_precision": 0.05,
+    "dup_recall": 1.0,
+    "dup_f1": 0.0952,
+    "dup_support": 1,
+    "confusion_labels": [
+      "bug",
+      "feature",
+      "question",
+      "docs",
+      "ci/build",
+      "security",
+      "other"
+    ],
+    "confusion_matrix": [
+      [
+        42,
+        0,
+        1,
+        1,
+        1,
+        0,
+        48
+      ],
+      [
+        5,
+        37,
+        1,
+        1,
+        2,
+        0,
+        50
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        33,
+        10,
+        1,
+        2,
+        3,
+        3,
+        207
+      ]
+    ],
+    "input_tokens": 229631,
+    "output_tokens": 37076,
+    "cost_usd": 1.245,
+    "cost_per_issue_usd": 0.00277,
+    "avg_input_tokens": 511,
+    "avg_output_tokens": 83,
+    "avg_elapsed_ms": 2469,
+    "confidence_tiers": {
+      "high": {
+        "n": 367,
+        "accuracy": 0.6376,
+        "avg_confidence": 0.9036,
+        "calibration_gap": 0.266
+      },
+      "medium": {
+        "n": 25,
+        "accuracy": 0.4,
+        "avg_confidence": 0.6836,
+        "calibration_gap": 0.2836
+      },
+      "low": {
+        "n": 57,
+        "accuracy": 0.7368,
+        "avg_confidence": 0.3202,
+        "calibration_gap": -0.4167
+      },
+      "overall": {
+        "avg_confidence": 0.8173,
+        "calibration_gap": 0.1803
+      }
+    },
+    "repo_stats": {
+      "repo": "cli/cli",
+      "n_fetched": 500,
+      "total_closed_issues": 5121,
+      "earliest": "2019-10-03",
+      "latest": "2026-06-18",
+      "span_days": 2450,
+      "avg_issues_per_month": 63.6
+    },
+    "roi": {
+      "accuracy": 0.637,
+      "baseline_minutes_per_month": 252,
+      "with_llm_minutes_per_month": 100,
+      "minutes_saved_per_month": 152,
+      "hours_saved_per_month": 2.5,
+      "pct_time_saved": 0.605,
+      "usd_saved_per_month": 191,
+      "usd_saved_per_year": 2287,
+      "api_cost_usd_per_run": 1.245,
+      "net_usd_saved_per_year": 2272,
+      "human_cost_per_issue_usd": 5.0,
+      "llm_cost_per_issue_usd": 0.00277,
+      "saved_per_correct_issue_usd": 4.9972,
+      "roi_multiplier": 1803,
+      "assumptions": {
+        "minutes_per_triage": 4.0,
+        "issues_per_month": 63,
+        "loaded_hourly_rate": 75.0,
+        "review_fraction": 0.2,
+        "review_minutes": 1.0
+      }
+    }
+  },
+  {
+    "repo": "grafana/grafana",
+    "model": "claude-claude-sonnet-4-6",
+    "n_scored": 205,
+    "label_accuracy": 0.8634,
+    "macro_precision": 0.4472,
+    "macro_recall": 0.4274,
+    "macro_f1": 0.3982,
+    "priority_accuracy": 0.0,
+    "priority_n": 1,
+    "dup_precision": 0.0,
+    "dup_recall": null,
+    "dup_f1": null,
+    "dup_support": 0,
+    "confusion_labels": [
+      "bug",
+      "feature",
+      "question",
+      "docs",
+      "ci/build",
+      "security",
+      "other"
+    ],
+    "confusion_matrix": [
+      [
+        158,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0
+      ],
+      [
+        1,
+        13,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        5,
+        10,
+        0,
+        0,
+        2,
+        1,
+        2
+      ]
+    ],
+    "input_tokens": 256180,
+    "output_tokens": 41022,
+    "cost_usd": 1.3839,
+    "cost_per_issue_usd": 0.00293,
+    "avg_input_tokens": 542,
+    "avg_output_tokens": 87,
+    "avg_elapsed_ms": 2480,
+    "confidence_tiers": {
+      "high": {
+        "n": 194,
+        "accuracy": 0.8814,
+        "avg_confidence": 0.9182,
+        "calibration_gap": 0.0368
+      },
+      "medium": {
+        "n": 8,
+        "accuracy": 0.5,
+        "avg_confidence": 0.7212,
+        "calibration_gap": 0.2212
+      },
+      "low": {
+        "n": 3,
+        "accuracy": 0.6667,
+        "avg_confidence": 0.3333,
+        "calibration_gap": -0.3333
+      },
+      "overall": {
+        "avg_confidence": 0.902,
+        "calibration_gap": 0.0385
+      }
+    },
+    "repo_stats": {
+      "repo": "grafana/grafana",
+      "n_fetched": 500,
+      "total_closed_issues": 41248,
+      "earliest": "2013-12-11",
+      "latest": "2026-06-18",
+      "span_days": 4572,
+      "avg_issues_per_month": 274.6
+    },
+    "roi": {
+      "accuracy": 0.8634,
+      "baseline_minutes_per_month": 1096,
+      "with_llm_minutes_per_month": 197,
+      "minutes_saved_per_month": 899,
+      "hours_saved_per_month": 15.0,
+      "pct_time_saved": 0.82,
+      "usd_saved_per_month": 1124,
+      "usd_saved_per_year": 13485,
+      "api_cost_usd_per_run": 1.3839,
+      "net_usd_saved_per_year": 13468,
+      "human_cost_per_issue_usd": 5.0,
+      "llm_cost_per_issue_usd": 0.00293,
+      "saved_per_correct_issue_usd": 4.9971,
+      "roi_multiplier": 1709,
+      "assumptions": {
+        "minutes_per_triage": 4.0,
+        "issues_per_month": 274,
+        "loaded_hourly_rate": 75.0,
+        "review_fraction": 0.2,
+        "review_minutes": 1.0
+      }
+    }
+  },
+  {
+    "repo": "prometheus/prometheus",
+    "model": "claude-claude-sonnet-4-6",
+    "n_scored": 128,
+    "label_accuracy": 0.7656,
+    "macro_precision": 0.3581,
+    "macro_recall": 0.2791,
+    "macro_f1": 0.2915,
+    "priority_accuracy": 0.566,
+    "priority_n": 53,
+    "dup_precision": null,
+    "dup_recall": null,
+    "dup_f1": null,
+    "dup_support": 0,
+    "confusion_labels": [
+      "bug",
+      "feature",
+      "question",
+      "docs",
+      "ci/build",
+      "security",
+      "other"
+    ],
+    "confusion_matrix": [
+      [
+        58,
+        1,
+        0,
+        0,
+        3,
+        0,
+        0
+      ],
+      [
+        5,
+        36,
+        0,
+        2,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        10,
+        1,
+        1,
+        3,
+        1,
+        0,
+        4
+      ]
+    ],
+    "input_tokens": 116554,
+    "output_tokens": 13211,
+    "cost_usd": 0.5478,
+    "cost_per_issue_usd": 0.00373,
+    "avg_input_tokens": 793,
+    "avg_output_tokens": 90,
+    "avg_elapsed_ms": 2504,
+    "confidence_tiers": {
+      "high": {
+        "n": 117,
+        "accuracy": 0.8205,
+        "avg_confidence": 0.9134,
+        "calibration_gap": 0.0929
+      },
+      "medium": {
+        "n": 11,
+        "accuracy": 0.1818,
+        "avg_confidence": 0.7045,
+        "calibration_gap": 0.5227
+      },
+      "low": {
+        "n": 0,
+        "accuracy": null,
+        "avg_confidence": null
+      },
+      "overall": {
+        "avg_confidence": 0.8955,
+        "calibration_gap": 0.1298
+      }
+    },
+    "repo_stats": {
+      "repo": "prometheus/prometheus",
+      "n_fetched": 500,
+      "total_closed_issues": 5956,
+      "earliest": "2012-11-24",
+      "latest": "2026-06-18",
+      "span_days": 4954,
+      "avg_issues_per_month": 36.6
+    },
+    "roi": {
+      "accuracy": 0.7656,
+      "baseline_minutes_per_month": 144,
+      "with_llm_minutes_per_month": 39,
+      "minutes_saved_per_month": 105,
+      "hours_saved_per_month": 1.7,
+      "pct_time_saved": 0.727,
+      "usd_saved_per_month": 131,
+      "usd_saved_per_year": 1571,
+      "api_cost_usd_per_run": 0.5478,
+      "net_usd_saved_per_year": 1564,
+      "human_cost_per_issue_usd": 5.0,
+      "llm_cost_per_issue_usd": 0.00373,
+      "saved_per_correct_issue_usd": 4.9963,
+      "roi_multiplier": 1342,
+      "assumptions": {
+        "minutes_per_triage": 4.0,
+        "issues_per_month": 36,
+        "loaded_hourly_rate": 75.0,
+        "review_fraction": 0.2,
+        "review_minutes": 1.0
+      }
+    }
+  }
+]

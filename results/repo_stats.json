@@ -1,0 +1,29 @@
+{
+  "grafana/grafana": {
+    "repo": "grafana/grafana",
+    "n_fetched": 500,
+    "total_closed_issues": 41248,
+    "earliest": "2013-12-11",
+    "latest": "2026-06-18",
+    "span_days": 4572,
+    "avg_issues_per_month": 274.6
+  },
+  "prometheus/prometheus": {
+    "repo": "prometheus/prometheus",
+    "n_fetched": 500,
+    "total_closed_issues": 5956,
+    "earliest": "2012-11-24",
+    "latest": "2026-06-18",
+    "span_days": 4954,
+    "avg_issues_per_month": 36.6
+  },
+  "cli/cli": {
+    "repo": "cli/cli",
+    "n_fetched": 500,
+    "total_closed_issues": 5121,
+    "earliest": "2019-10-03",
+    "latest": "2026-06-18",
+    "span_days": 2450,
+    "avg_issues_per_month": 63.6
+  }
+}

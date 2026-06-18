@@ -92,6 +92,7 @@ def score_file(results_path: Path) -> dict:
     pri_true, pri_pred = [], []
     dup_tp = dup_fp = dup_fn = 0
     total_input = total_output = 0
+    n_preds = len(preds)
 
     for p in preds:
         total_input += p.get("input_tokens", 0)
@@ -138,6 +139,11 @@ def score_file(results_path: Path) -> dict:
 
     model_name = tag.split("-", 1)[1] if "-" in tag else tag
     run_cost = cost_usd(model_name, total_input, total_output)
+    avg_input = total_input / n_preds if n_preds else 0
+    avg_output = total_output / n_preds if n_preds else 0
+    cost_per_issue = cost_usd(model_name, avg_input, avg_output)
+    elapsed_vals = [p["elapsed_ms"] for p in preds if p.get("elapsed_ms")]
+    avg_elapsed_ms = round(sum(elapsed_vals) / len(elapsed_vals)) if elapsed_vals else None
 
     repo_name = repo_slug.replace("__", "/")
     repo_stats = _load_repo_stats().get(repo_name, {})
@@ -165,24 +171,32 @@ def score_file(results_path: Path) -> dict:
         "input_tokens": total_input,
         "output_tokens": total_output,
         "cost_usd": round(run_cost, 4),
+        "cost_per_issue_usd": round(cost_per_issue, 5),
+        "avg_input_tokens": round(avg_input),
+        "avg_output_tokens": round(avg_output),
+        "avg_elapsed_ms": avg_elapsed_ms,
         "confidence_tiers": confidence_tiers,
         "repo_stats": repo_stats or None,
-        "roi": roi(acc, run_cost, roi_assumptions),
+        "roi": roi(acc, run_cost, roi_assumptions, cost_per_issue),
     }
 
 
 def print_report(s: dict) -> None:
     rs = s.get("repo_stats") or {}
-    vol_note = (f"  [measured: {rs['avg_issues_per_month']} issues/mo avg, "
-                f"{rs['earliest']} to {rs['latest']}]"
-                if rs.get("avg_issues_per_month") else "  [volume: assumed 400/mo]")
+    if rs.get("avg_issues_per_month"):
+        total_str = (f", {rs['total_closed_issues']:,} total closed"
+                     if rs.get("total_closed_issues") else "")
+        vol_note = (f"  [measured: {rs['avg_issues_per_month']} issues/mo avg (lifetime)"
+                    f"{total_str}, {rs['earliest']} to {rs['latest']}]")
+    else:
+        vol_note = "  [volume: assumed 400/mo]"
     print(f"\n=== {s['repo']}  |  {s['model']}  |  n={s['n_scored']}{vol_note} ===")
     print(f"  label accuracy : {s['label_accuracy']:.1%}")
     print(f"  macro F1       : {s['macro_f1']:.3f}  "
           f"(P {s['macro_precision']:.3f} / R {s['macro_recall']:.3f})")
     if s["priority_accuracy"] is not None:
         print(f"  priority acc   : {s['priority_accuracy']:.1%}  (n={s['priority_n']})")
-    if s["dup_precision"] is not None:
+    if s["dup_precision"] is not None and s["dup_recall"] is not None:
         print(f"  dup precision  : {s['dup_precision']:.1%}  "
               f"recall {s['dup_recall']:.1%}  (support={s['dup_support']})")
     r = s["roi"]
@@ -193,6 +207,10 @@ def print_report(s: dict) -> None:
         net_str = f"  net ~${net:,}/yr" if net is not None else ""
         print(f"  API cost       : ${s['cost_usd']:.4f} this run  "
               f"({s.get('input_tokens',0):,} in / {s.get('output_tokens',0):,} out tokens){net_str}")
+    if s.get("cost_per_issue_usd") is not None:
+        latency = f"  {s['avg_elapsed_ms']}ms avg latency" if s.get("avg_elapsed_ms") else ""
+        print(f"  cost/issue     : ${s['cost_per_issue_usd']:.5f}  "
+              f"({s.get('avg_input_tokens',0)} in / {s.get('avg_output_tokens',0)} out tokens avg){latency}")
     ct = s.get("confidence_tiers")
     if ct:
         print("  confidence     :"

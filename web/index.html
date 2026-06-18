@@ -215,6 +215,37 @@
         font-family: var(--mono);
       }
 
+      .breakeven-box {
+        margin: 12px 0;
+        padding: 14px 18px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--ink-dim);
+      }
+      .calc-details {
+        margin: 8px 0 20px;
+        font-size: 13px;
+        color: var(--ink-dim);
+      }
+      .calc-details summary {
+        cursor: pointer;
+        color: var(--accent);
+        user-select: none;
+        padding: 6px 0;
+      }
+      .calc-body {
+        padding: 12px 0 4px 16px;
+        border-left: 2px solid var(--line);
+        margin-top: 8px;
+      }
+      .calc-body p { margin: 6px 0; }
+      .verdict-win  { color: var(--good); font-weight: 600; }
+      .verdict-warn { color: var(--warn); font-weight: 600; }
+      .verdict-bad  { color: var(--bad);  font-weight: 600; }
+
       /* metric strip */
       .strip {
         display: grid;
@@ -478,25 +509,67 @@
             <p class="kicker">What that buys the team</p>
             <div class="roi-row">
               <div class="roi-stat">
+                <div class="n green" id="roiMultiplier">—</div>
+                <div class="c">ROI multiplier per issue</div>
+              </div>
+              <div class="roi-stat">
+                <div class="n" id="roiCostPerIssue">—</div>
+                <div class="c">LLM cost vs $<span id="roiHumanCost">—</span> human baseline</div>
+              </div>
+              <div class="roi-stat">
+                <div class="n" id="roiLatency">—</div>
+                <div class="c">latency per issue</div>
+              </div>
+              <div class="roi-stat">
                 <div class="n green" id="roiHrs">—</div>
                 <div class="c">maintainer-hours saved / month</div>
               </div>
               <div class="roi-stat">
-                <div class="n" id="roiUsd">—</div>
-                <div class="c">gross savings / year</div>
-              </div>
-              <div class="roi-stat">
-                <div class="n green" id="roiNet">—</div>
+                <div class="n" id="roiNet">—</div>
                 <div class="c">net savings / year</div>
-              </div>
-              <div class="roi-stat">
-                <div class="n" id="roiPct">—</div>
-                <div class="c">cut in triage time</div>
               </div>
             </div>
             <div class="assume" id="roiAssume"></div>
           </div>
         </div>
+
+        <!-- per-repo ROI table -->
+        <div class="sec">
+          <h2>ROI by repo</h2>
+          <div class="rule"></div>
+          <span class="meta">same model · same accuracy · volume decides the outcome</span>
+        </div>
+        <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;">
+          <table id="roiTable">
+            <thead>
+              <tr>
+                <th>Repo</th>
+                <th style="text-align:right">Volume</th>
+                <th style="text-align:right">Accuracy</th>
+                <th style="text-align:right">Cost / issue</th>
+                <th style="text-align:right">Human baseline</th>
+                <th style="text-align:right">ROI multiplier</th>
+                <th style="text-align:right">Hrs saved / mo</th>
+                <th style="text-align:right">Net / yr</th>
+                <th style="text-align:right">Verdict</th>
+              </tr>
+            </thead>
+            <tbody id="roiTableBody"></tbody>
+          </table>
+        </div>
+        <div class="breakeven-box" id="breakevenBox" style="display:none">
+          <span id="breakevenText"></span>
+        </div>
+        <details class="calc-details">
+          <summary>How is this calculated?</summary>
+          <div class="calc-body">
+            <p><strong>Human baseline:</strong> 4 min × $75/hr loaded rate = <strong>$5.00 per issue</strong>. The engineer reads the issue, picks a label, sets priority.</p>
+            <p><strong>With LLM:</strong> wrong predictions (1 − accuracy) still need full human review. Correct predictions only need a 20% spot-check at 1 min each.</p>
+            <p><strong>Formula:</strong> saved = (issues × 4 min) − (wrong × 4 min + right × 20% × 1 min)</p>
+            <p><strong>ROI multiplier:</strong> human cost per issue ÷ LLM API cost per issue. Volume-independent — works for any repo size.</p>
+            <p><strong>Break-even:</strong> net savings turn positive when monthly volume is high enough that saved engineer time exceeds API cost × 12.</p>
+          </div>
+        </details>
 
         <!-- metric strip -->
         <div class="strip" id="strip"></div>
@@ -640,13 +713,13 @@
             overall: { avg_confidence: 0.81, calibration_gap: -0.06 },
           },
           roi: {
-            hours_saved_per_month: 23.4,
-            usd_saved_per_year: 21060,
-            net_usd_saved_per_year: 20046,
+            hours_saved_per_month: 15.2,
+            usd_saved_per_year: 13637,
+            net_usd_saved_per_year: 12622,
             api_cost_usd_per_run: 1.24,
             pct_time_saved: 0.83,
             assumptions: {
-              issues_per_month: 400,
+              issues_per_month: 275,
               minutes_per_triage: 4,
               loaded_hourly_rate: 75,
             },
@@ -685,13 +758,13 @@
           ],
           cost_usd: 0.98,
           roi: {
-            hours_saved_per_month: 21.9,
-            usd_saved_per_year: 19710,
-            net_usd_saved_per_year: 18734,
+            hours_saved_per_month: 14.7,
+            usd_saved_per_year: 13198,
+            net_usd_saved_per_year: 12222,
             api_cost_usd_per_run: 0.98,
             pct_time_saved: 0.8,
             assumptions: {
-              issues_per_month: 400,
+              issues_per_month: 275,
               minutes_per_triage: 4,
               loaded_hourly_rate: 75,
             },
@@ -730,13 +803,13 @@
           ],
           cost_usd: 1.11,
           roi: {
-            hours_saved_per_month: 22.6,
-            usd_saved_per_year: 20340,
-            net_usd_saved_per_year: 19007,
+            hours_saved_per_month: 2.0,
+            usd_saved_per_year: 1810,
+            net_usd_saved_per_year: -524,
             api_cost_usd_per_run: 1.11,
             pct_time_saved: 0.82,
             assumptions: {
-              issues_per_month: 400,
+              issues_per_month: 37,
               minutes_per_triage: 4,
               loaded_hourly_rate: 75,
             },
@@ -814,15 +887,19 @@
           `<span style="color:var(--accent)">${best.model}</span> on ${best.repo} · n=${best.n_scored}`;
 
         const roi = best.roi || {};
+        document.getElementById("roiMultiplier").textContent =
+          roi.roi_multiplier != null ? `${roi.roi_multiplier.toLocaleString()}×` : "—";
+        document.getElementById("roiCostPerIssue").textContent =
+          best.cost_per_issue_usd != null ? `$${best.cost_per_issue_usd.toFixed(4)}` : "—";
+        document.getElementById("roiHumanCost").textContent =
+          roi.human_cost_per_issue_usd != null ? roi.human_cost_per_issue_usd.toFixed(2) : "—";
+        document.getElementById("roiLatency").textContent =
+          best.avg_elapsed_ms != null ? `${(best.avg_elapsed_ms/1000).toFixed(1)}s` : "—";
         document.getElementById("roiHrs").textContent =
           roi.hours_saved_per_month ?? "—";
-        document.getElementById("roiUsd").textContent = roi.usd_saved_per_year
-          ? fmtUSD(roi.usd_saved_per_year)
-          : "—";
         document.getElementById("roiNet").textContent = roi.net_usd_saved_per_year != null
           ? fmtUSD(roi.net_usd_saved_per_year)
           : "—";
-        document.getElementById("roiPct").textContent = pct(roi.pct_time_saved);
         const a = roi.assumptions || {};
         const apiCost = best.cost_usd != null ? ` · API cost $${best.cost_usd.toFixed(4)}/run` : "";
         document.getElementById("roiAssume").textContent = a.issues_per_month
@@ -861,6 +938,18 @@
             d: "tokens in + out",
             frac: null,
           },
+          {
+            t: "Cost per issue",
+            v: best.cost_per_issue_usd != null ? `$${best.cost_per_issue_usd.toFixed(4)}` : "—",
+            d: `~${best.avg_input_tokens ?? "—"} in / ${best.avg_output_tokens ?? "—"} out tokens avg`,
+            frac: null,
+          },
+          {
+            t: "Latency per issue",
+            v: best.avg_elapsed_ms != null ? `${(best.avg_elapsed_ms/1000).toFixed(1)}s` : "—",
+            d: "wall-clock time to label one issue",
+            frac: null,
+          },
         ];
         document.getElementById("strip").innerHTML = strip
           .map(
@@ -870,6 +959,49 @@
       <div class="bar"><i style="width:${Math.round((m.frac || 0) * 100)}%"></i></div></div>`,
           )
           .join("");
+
+        // per-repo ROI table — best run per repo, sorted by net savings desc
+        const byRepo = {};
+        data.forEach(s => {
+          if (!byRepo[s.repo] || s.label_accuracy > byRepo[s.repo].label_accuracy)
+            byRepo[s.repo] = s;
+        });
+        const roiRows = Object.values(byRepo).sort(
+          (a, b) => (b.roi?.net_usd_saved_per_year ?? -Infinity) - (a.roi?.net_usd_saved_per_year ?? -Infinity)
+        );
+        const netVals = roiRows.map(s => s.roi?.net_usd_saved_per_year ?? 0);
+        const breakevenRepos = roiRows.filter(s => (s.roi?.net_usd_saved_per_year ?? 0) < 0).map(s => s.repo.split("/")[1]);
+        document.getElementById("roiTableBody").innerHTML = roiRows.map(s => {
+          const r = s.roi || {};
+          const rs = s.repo_stats || {};
+          const net = r.net_usd_saved_per_year ?? null;
+          const mul = r.roi_multiplier;
+          let verdict, vclass;
+          if (net == null) { verdict = "—"; vclass = ""; }
+          else if (net >= 3000) { verdict = "✅ clear win"; vclass = "verdict-win"; }
+          else if (net >= 0)    { verdict = "⚠️ marginal";  vclass = "verdict-warn"; }
+          else                  { verdict = "❌ not yet";   vclass = "verdict-bad"; }
+          return `<tr>
+            <td><span class="repo-tag">${s.repo.split("/")[1] || s.repo}</span><br>
+              <span style="font-size:11px;color:var(--ink-faint)">${s.repo}</span></td>
+            <td class="num">${rs.avg_issues_per_month ? Math.round(rs.avg_issues_per_month)+"/mo" : "—"}</td>
+            <td class="num">${pct(s.label_accuracy)}</td>
+            <td class="num">${s.cost_per_issue_usd != null ? "$"+s.cost_per_issue_usd.toFixed(4) : "—"}</td>
+            <td class="num">${r.human_cost_per_issue_usd != null ? "$"+r.human_cost_per_issue_usd.toFixed(2) : "—"}</td>
+            <td class="num">${mul != null ? mul.toLocaleString()+"×" : "—"}</td>
+            <td class="num">${r.hours_saved_per_month ?? "—"} hrs</td>
+            <td class="num">${net != null ? fmtUSD(net) : "—"}</td>
+            <td class="num"><span class="${vclass}">${verdict}</span></td>
+          </tr>`;
+        }).join("");
+        const minPositive = roiRows.find(s => (s.roi?.net_usd_saved_per_year ?? -1) >= 0);
+        const minVol = minPositive?.repo_stats?.avg_issues_per_month;
+        const beBox = document.getElementById("breakevenBox");
+        const beText = document.getElementById("breakevenText");
+        if (minVol) {
+          beText.innerHTML = `💡 At these accuracy levels, you need roughly <strong>~${Math.round(minVol)} issues/month</strong> for positive ROI — the threshold where saved engineer time exceeds API cost. That covers most mid-size engineering teams running internal tooling repos.`;
+          beBox.style.display = "block";
+        }
 
         // comparison table
         const byAcc = [...data].sort(
