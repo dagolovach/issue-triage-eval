@@ -24,6 +24,7 @@ from .env import load_env
 load_env()
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results"
 API = "https://api.github.com"
 DUP_RE = re.compile(r"duplicate\s+of\s+#(\d+)", re.I)
 
@@ -106,6 +107,39 @@ def to_record(issue: dict, repo: str) -> dict:
     }
 
 
+def compute_repo_stats(repo: str, records: list[dict]) -> dict:
+    dates = []
+    for r in records:
+        try:
+            d = time.strptime(r["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+            dates.append(time.mktime(d))
+        except (KeyError, ValueError):
+            continue
+    if not dates:
+        return {}
+    earliest = min(dates)
+    latest = max(dates)
+    span_days = max((latest - earliest) / 86400, 1)
+    span_months = span_days / 30.44
+    avg_per_month = round(len(dates) / span_months, 1)
+    return {
+        "repo": repo,
+        "n_fetched": len(records),
+        "earliest": time.strftime("%Y-%m-%d", time.gmtime(earliest)),
+        "latest": time.strftime("%Y-%m-%d", time.gmtime(latest)),
+        "span_days": round(span_days),
+        "avg_issues_per_month": avg_per_month,
+    }
+
+
+def save_repo_stats(stats: dict) -> None:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    p = RESULTS_DIR / "repo_stats.json"
+    existing = json.loads(p.read_text()) if p.exists() else {}
+    existing[stats["repo"]] = stats
+    p.write_text(json.dumps(existing, indent=2))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Fetch closed issues -> data/{repo}.jsonl")
     ap.add_argument("--repo", required=True, help="owner/name, e.g. grafana/grafana")
@@ -118,17 +152,27 @@ def main() -> None:
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     out = DATA_DIR / f"{args.repo.replace('/', '__')}.jsonl"
-    n_written, n_dups = 0, 0
+    records = []
+    n_dups = 0
     with out.open("w") as f:
         for issue in fetch_issues(args.repo, args.n):
             rec = to_record(issue, args.repo)
             if rec["duplicate_of"] is not None:
                 n_dups += 1
             f.write(json.dumps(rec) + "\n")
-            n_written += 1
-            if n_written % 50 == 0:
-                print(f"  {n_written} issues...", file=sys.stderr)
-    print(f"wrote {n_written} issues ({n_dups} duplicates) -> {out}")
+            records.append(rec)
+            if len(records) % 50 == 0:
+                print(f"  {len(records)} issues...", file=sys.stderr)
+    print(f"wrote {len(records)} issues ({n_dups} duplicates) -> {out}")
+
+    stats = compute_repo_stats(args.repo, records)
+    if stats:
+        save_repo_stats(stats)
+        print(
+            f"repo stats: {stats['n_fetched']} issues over {stats['span_days']} days "
+            f"({stats['earliest']} to {stats['latest']}) "
+            f"= {stats['avg_issues_per_month']} issues/month avg"
+        )
 
 
 if __name__ == "__main__":

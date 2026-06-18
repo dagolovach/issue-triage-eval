@@ -20,7 +20,7 @@ from sklearn.metrics import (confusion_matrix, precision_recall_fscore_support,
 
 from .taxonomy import (CATEGORIES, normalize_category, normalize_priority)
 from .providers import cost_usd
-from .roi import roi
+from .roi import roi, ROIAssumptions
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
@@ -29,6 +29,11 @@ RESULTS_DIR = ROOT / "results"
 
 def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
+
+
+def _load_repo_stats() -> dict:
+    p = RESULTS_DIR / "repo_stats.json"
+    return json.loads(p.read_text()) if p.exists() else {}
 
 
 def _truth_index(repo_slug: str) -> dict[int, dict]:
@@ -134,8 +139,15 @@ def score_file(results_path: Path) -> dict:
     model_name = tag.split("-", 1)[1] if "-" in tag else tag
     run_cost = cost_usd(model_name, total_input, total_output)
 
+    repo_name = repo_slug.replace("__", "/")
+    repo_stats = _load_repo_stats().get(repo_name, {})
+    measured_volume = repo_stats.get("avg_issues_per_month")
+    roi_assumptions = ROIAssumptions(
+        issues_per_month=int(measured_volume) if measured_volume else ROIAssumptions().issues_per_month
+    )
+
     return {
-        "repo": repo_slug.replace("__", "/"),
+        "repo": repo_name,
         "model": tag,
         "n_scored": len(y_true),
         "label_accuracy": round(acc, 4),
@@ -154,12 +166,17 @@ def score_file(results_path: Path) -> dict:
         "output_tokens": total_output,
         "cost_usd": round(run_cost, 4),
         "confidence_tiers": confidence_tiers,
-        "roi": roi(acc, run_cost),
+        "repo_stats": repo_stats or None,
+        "roi": roi(acc, run_cost, roi_assumptions),
     }
 
 
 def print_report(s: dict) -> None:
-    print(f"\n=== {s['repo']}  |  {s['model']}  |  n={s['n_scored']} ===")
+    rs = s.get("repo_stats") or {}
+    vol_note = (f"  [measured: {rs['avg_issues_per_month']} issues/mo avg, "
+                f"{rs['earliest']} to {rs['latest']}]"
+                if rs.get("avg_issues_per_month") else "  [volume: assumed 400/mo]")
+    print(f"\n=== {s['repo']}  |  {s['model']}  |  n={s['n_scored']}{vol_note} ===")
     print(f"  label accuracy : {s['label_accuracy']:.1%}")
     print(f"  macro F1       : {s['macro_f1']:.3f}  "
           f"(P {s['macro_precision']:.3f} / R {s['macro_recall']:.3f})")
