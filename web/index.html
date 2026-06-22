@@ -628,7 +628,9 @@
         <div class="sec" id="confSec" style="display:none">
           <h2>Confidence vs accuracy</h2>
           <div class="rule"></div>
-          <span class="meta">does the model know when it knows?</span>
+          <span class="meta">does the model know when it's uncertain? gap = avg confidence − accuracy · near zero = trustworthy · large positive = overconfident</span>
+          <div id="confRepoHost" style="margin-top:18px"></div>
+          <div style="margin-top:22px;font-size:12px;color:var(--ink-faint);font-family:var(--mono)">per-run tier breakdown (best run)</div>
         </div>
         <div id="confHost"></div>
 
@@ -840,6 +842,54 @@
         return x == null ? "—" : x.toFixed(2);
       }
 
+      function renderCalibrationByRepo(byRepo) {
+        const rows = Object.values(byRepo).sort((a, b) => {
+          const ga = a.confidence_tiers?.high?.calibration_gap ?? 999;
+          const gb = b.confidence_tiers?.high?.calibration_gap ?? 999;
+          return ga - gb;
+        }).map(s => {
+          const ct = s.confidence_tiers;
+          if (!ct?.high?.n) return "";
+          const acc = ct.high.accuracy != null ? (ct.high.accuracy * 100).toFixed(0) + "%" : "—";
+          const gap = ct.high.calibration_gap != null ? ct.high.calibration_gap : null;
+          const gapStr = gap != null ? (gap >= 0 ? "+" : "") + gap.toFixed(2) : "—";
+          let signalLabel, signalColor;
+          if (gap == null)       { signalLabel = "—";           signalColor = "var(--ink-faint)"; }
+          else if (gap <= 0.05)  { signalLabel = "✅ trustworthy"; signalColor = "var(--good)"; }
+          else if (gap <= 0.15)  { signalLabel = "⚠️ some drift"; signalColor = "var(--warn)"; }
+          else                   { signalLabel = "❌ broken";      signalColor = "var(--bad)"; }
+          const barW = Math.round((ct.high.accuracy || 0) * 100);
+          const barColor = gap == null ? "var(--ink-faint)" : gap <= 0.05 ? "var(--good)" : gap <= 0.15 ? "var(--warn)" : "var(--bad)";
+          return `<tr>
+            <td style="padding:12px 16px 12px 0;font-size:13px">
+              <span class="repo-tag">${s.repo.split("/")[1] || s.repo}</span>
+              <span style="font-size:11px;color:var(--ink-faint);margin-left:6px">${s.repo}</span>
+            </td>
+            <td style="padding:12px 16px;font-family:var(--mono);font-size:18px;font-weight:600;color:${barColor}">${acc}</td>
+            <td style="padding:12px 16px;width:180px">
+              <div style="height:5px;background:var(--grid);border-radius:3px;overflow:hidden">
+                <div style="width:${barW}%;height:100%;background:${barColor};border-radius:3px"></div>
+              </div>
+            </td>
+            <td style="padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--ink-faint)">${ct.high.n} issues</td>
+            <td style="padding:12px 16px;font-family:var(--mono);font-size:13px;color:var(--ink-faint)">${gapStr}</td>
+            <td style="padding:12px 16px;font-size:13px;color:${signalColor}">${signalLabel}</td>
+          </tr>`;
+        }).join("");
+        document.getElementById("confRepoHost").innerHTML =
+          `<table style="width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+            <thead><tr style="border-bottom:1px solid var(--line)">
+              <th style="padding:10px 16px 10px 0;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em">REPO</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em">HIGH-CONF ACCURACY</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em"></th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em">N</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em">GAP</th>
+              <th style="padding:10px 16px;text-align:left;font-size:11px;color:var(--ink-faint);font-family:var(--mono);letter-spacing:0.08em">SIGNAL</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
       function renderConfidence(best) {
         const ct = best.confidence_tiers;
         if (!ct) return;
@@ -1033,6 +1083,7 @@
         document.getElementById("cmTitle").textContent =
           `${best.model} · ${best.repo}`;
 
+        renderCalibrationByRepo(byRepo);
         renderConfidence(best);
 
         document.getElementById("genAt").textContent =
